@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Interativo: Implementação de Manutenção Autônoma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is structured as a single-page, vertical-scrolling guide. It begins with foundational 'pillars' of Autonomous Maintenance, followed by an interactive 7-step timeline. This sequential structure is intuitive for a step-by-step process. Each step is a card with details and a small interactive element to boost engagement. The final section features a dynamic chart visualizing the shift in workload, which serves as a powerful summary of the methodology's benefits. This design was chosen to transform a procedural document into an exploratory and educational tool, guiding the user logically from 'why' (pillars) to 'how' (steps) and 'what's the result' (chart). -->
+    <!-- Visualization & Content Choices: 1. Pillars: Goal=Inform; Method=Icon+Text Cards (HTML/Tailwind); Interaction=None; Justification=Provides foundational context before details. 2. Steps Timeline: Goal=Organize/Inform; Method=Vertical timeline with cards (HTML/Tailwind); Interaction=Click-to-scroll navigation, plus minor in-card interactions (checklists, simple diagrams) to maintain engagement. 3. Operator Skills: Goal=Show Change; Method=Donut Chart (Chart.js/Canvas); Interaction=Static visualization; Justification=Clearly illustrates skill progression. 4. Workload Shift: Goal=Compare; Method=Stacked Bar Chart (Chart.js/Canvas); Interaction=Buttons to toggle between 'Before' and 'After' states; Justification=Visually quantifies the core benefit of redistributing maintenance tasks. All choices avoid SVG/Mermaid and focus on clarity and interaction using standard web technologies. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4;
+            color: #3d3d3d;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        .step-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 1.25rem;
+            height: 100%;
+            width: 4px;
+            background-color: #d1d5db;
+            transform: translateX(-50%);
+        }
+        .timeline-dot {
+            position: absolute;
+            top: 0;
+            left: 1.25rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            background-color: white;
+            border: 4px solid #d1d5db;
+            border-radius: 9999px;
+            transform: translate(-50%, 10px);
+            transition: all 0.3s ease;
+        }
+        .timeline-item.active .timeline-dot {
+            border-color: #2563eb;
+            background-color: #2563eb;
+        }
+        .chart-container {
+             position: relative;
+             width: 100%;
+             max-width: 700px;
+             margin-left: auto;
+             margin-right: auto;
+             height: 350px;
+             max-height: 450px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl font-bold text-blue-700">Manutenção Autônoma</h1>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#pilares" class="nav-link text-gray-600 font-medium pb-1">Pilares</a>
+                    <a href="#roteiro" class="nav-link text-gray-600 font-medium pb-1">Roteiro</a>
+                    <a href="#impacto" class="nav-link text-gray-600 font-medium pb-1">Impacto</a>
+                    <a href="#otimizacao" class="nav-link text-gray-600 font-medium pb-1">Otimização ✨</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <section id="intro" class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Seu Guia para a Excelência Operacional</h2>
+            <p class="max-w-3xl mx-auto text-lg text-gray-600">
+                A Manutenção Autônoma é uma metodologia que capacita os operadores a se tornarem a primeira linha de defesa da saúde dos equipamentos. Este guia interativo fornecerá um roteiro claro e prático para implementar essa transformação em seu ambiente de trabalho, passo a passo.
+            </p>
+        </section>
+
+        <section id="pilares" class="mb-20">
+            <h3 class="text-3xl font-bold text-center text-gray-800 mb-2">Pilares Fundamentais</h3>
+            <p class="text-center text-gray-600 mb-10">Para uma implementação bem-sucedida, é essencial compreender os princípios que sustentam a Manutenção Autônoma. Esta seção apresenta os conceitos-chave que guiarão sua jornada, estabelecendo a base para uma cultura de proatividade e cuidado com os ativos.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-500">
+                    <div class="text-3xl mb-4">🔧</div>
+                    <h4 class="text-xl font-semibold mb-2">Capacitação do Operador</h4>
+                    <p class="text-gray-600">Transformar operadores em "donos" de seus equipamentos, treinando-os para realizar tarefas de manutenção de rotina, inspeções e detecção de anomalias.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-green-500">
+                    <div class="text-3xl mb-4">🔍</div>
+                    <h4 class="text-xl font-semibold mb-2">Mentalidade Proativa</h4>
+                    <p class="text-gray-600">Mudar o foco de "consertar quando quebra" para "prevenir falhas", identificando e eliminando problemas em seus estágios iniciais.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-yellow-500">
+                    <div class="text-3xl mb-4">🌟</div>
+                    <h4 class="text-xl font-semibold mb-2">Melhoria Contínua (Kaizen)</h4>
+                    <p class="text-gray-600">Fomentar uma cultura onde todos estão constantemente buscando maneiras de melhorar a confiabilidade do equipamento, a segurança e a eficiência do processo.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="roteiro">
+            <h3 class="text-3xl font-bold text-center text-gray-800 mb-2">Roteiro de Implementação em 7 Passos</h3>
+            <p class="text-center text-gray-600 mb-12">Esta é a jornada prática para implementar a Manutenção Autônoma. Cada passo constrói sobre o anterior, desenvolvendo gradualmente as habilidades e a responsabilidade da equipe. Utilize este roteiro como um guia visual para navegar pelas fases de implementação e garantir que todos os aspectos essenciais sejam cobertos.</p>
+
+            <div class="relative timeline">
+                <div class="timeline-item mb-12 pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step1" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                        <span class="text-sm font-semibold text-blue-600">Passo 1</span>
+                        <h4 class="text-2xl font-bold my-2">Limpeza e Inspeção Inicial</h4>
+                        <p class="text-gray-600 mb-4">O ponto de partida é envolver os operadores na limpeza profunda dos equipamentos. O objetivo não é apenas a limpeza em si, mas usar o processo como uma forma de inspeção tátil para identificar anormalidades como vazamentos, parafusos soltos, trincas e superaquecimento. Esta etapa revela problemas ocultos e cria um senso de propriedade desde o início.</p>
+                        <div class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+                            <h5 class="font-semibold mb-2">Checklist de Anormalidades</h5>
+                            <ul class="space-y-1 text-gray-700">
+                                <li><label class="flex items-center"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">Vazamentos de óleo, água ou ar</label></li>
+                                <li><label class="flex items-center"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">Parafusos e porcas soltas</label></li>
+                                <li><label class="flex items-center"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">Sinais de superaquecimento ou ruídos incomuns</label></li>
+                                <li><label class="flex items-center"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">Trincas, desgastes ou corrosão</label></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-item mb-12 pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step2" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                        <span class="text-sm font-semibold text-blue-600">Passo 2</span>
+                        <h4 class="text-2xl font-bold my-2">Eliminar Fontes de Contaminação e Melhorar Acesso</h4>
+                        <p class="text-gray-600 mb-4">Após identificar as fontes de sujeira na primeira etapa, a equipe deve trabalhar para eliminá-las na raiz. Além disso, devem ser feitas melhorias para facilitar a limpeza, lubrificação e inspeção, como instalar tampas transparentes, otimizar a disposição de mangueiras ou criar pontos de acesso mais ergonômicos. O objetivo é tornar a manutenção mais rápida, segura e eficaz.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item mb-12 pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step3" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                        <span class="text-sm font-semibold text-blue-600">Passo 3</span>
+                        <h4 class="text-2xl font-bold my-2">Desenvolver Padrões de Limpeza, Lubrificação e Inspeção</h4>
+                        <p class="text-gray-600 mb-4">Nesta fase, a equipe cria padrões claros e visuais (muitas vezes chamados de "Lições de Um Ponto") para as tarefas de rotina. Esses padrões definem o quê, como, quando e por quem cada tarefa deve ser realizada. O uso de códigos de cores, diagramas e instruções simples garante que todos executem as atividades da mesma forma, mantendo a consistência e a qualidade.</p>
+                         <div class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+                            <h5 class="font-semibold mb-2">Exemplo de Padrão Visual (Lição de Um Ponto)</h5>
+                            <div class="flex items-center justify-between border-2 p-3 rounded-lg">
+                                <div>
+                                    <p class="font-bold text-lg">Ponto de Lubrificação - Mancal 03</p>
+                                    <p class="text-sm">Tipo de Graxa: <span class="font-semibold text-red-600">Tipo X</span></p>
+                                    <p class="text-sm">Frequência: <span class="font-semibold text-green-600">Semanal</span></p>
+                                    <p class="text-sm">Quantidade: <span class="font-semibold">2 bombeadas</span></p>
+                                </div>
+                                <div class="text-5xl">⚙️</div>
+                            </div>
+                            
+                            <!-- GEMINI Feature 1: LUP Generator -->
+                            <h5 class="font-semibold mt-6 mb-3 border-t pt-4 border-gray-300">Criador de Lição de Um Ponto (LUP) ✨</h5>
+                            <input type="text" id="lupComponent" placeholder="Nome do Componente (ex: Mancal da Esteira Principal)" class="w-full p-2 border border-gray-300 rounded-md mb-2">
+                            <input type="text" id="lupTask" placeholder="Tarefa (ex: Inspeção de aperto/Lubrificação com graxa EP2)" class="w-full p-2 border border-gray-300 rounded-md mb-3">
+                            <button id="generateLUPBtn" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">Gerar Rascunho LUP ✨</button>
+                            <div id="lupOutput" class="mt-4 p-3 bg-white rounded-md border border-indigo-200 hidden">
+                                <p class="font-bold text-sm text-indigo-700 mb-1">Rascunho Sugerido pelo Gemini:</p>
+                                <div id="lupResultText" class="text-sm text-gray-700 whitespace-pre-wrap"></div>
+                            </div>
+                            <div id="lupLoading" class="mt-4 text-center hidden">
+                                <div class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-indigo-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status"></div>
+                                <span class="ml-2 text-sm text-indigo-500">Gerando rascunho...</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="timeline-item mb-12 pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step4" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                         <span class="text-sm font-semibold text-blue-600">Passo 4</span>
+                        <h4 class="text-2xl font-bold my-2">Conduzir Treinamento de Inspeção Geral</h4>
+                        <p class="text-gray-600 mb-4">Com os padrões estabelecidos, os operadores recebem treinamento formal sobre os componentes dos equipamentos (mecânica, elétrica, pneumática, hidráulica). O objetivo é aprofundar seu conhecimento para que possam realizar inspeções mais detalhadas, entender as funções de cada parte e identificar anomalias com maior precisão, compreendendo as causas e efeitos potenciais.</p>
+                        <div class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+                            <h5 class="font-semibold mb-2 text-center">Progressão de Habilidades do Operador</h5>
+                            <div class="chart-container" style="height:250px; max-height:250px;">
+                                <canvas id="skillsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="timeline-item mb-12 pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step5" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                        <span class="text-sm font-semibold text-blue-600">Passo 5</span>
+                        <h4 class="text-2xl font-bold my-2">Conduzir Inspeções Autônomas</h4>
+                        <p class="text-gray-600 mb-4">Após o treinamento, os operadores começam a executar as rotinas de inspeção de forma autônoma, utilizando os padrões e checklists desenvolvidos. Eles assumem total responsabilidade pela condição de seus equipamentos no dia a dia. A equipe de manutenção atua como suporte e mentora, ajudando a resolver problemas mais complexos que os operadores identificam.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item mb-12 pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step6" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                        <span class="text-sm font-semibold text-blue-600">Passo 6</span>
+                        <h4 class="text-2xl font-bold my-2">Padronizar Através da Gestão Visual</h4>
+                        <p class="text-gray-600 mb-4">Para sustentar os ganhos, a padronização é levada a um nível mais alto em toda a área de trabalho. Isso inclui a organização do local de trabalho (usando princípios de 5S), a criação de quadros de gestão visual para acompanhar métricas de desempenho (disponibilidade, anomalias encontradas, etc.) e a padronização de ferramentas e procedimentos em todas as máquinas similares.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item pl-12 relative">
+                    <div class="timeline-dot"></div>
+                    <div id="step7" class="step-card bg-white p-6 rounded-lg shadow-lg">
+                         <span class="text-sm font-semibold text-blue-600">Passo 7</span>
+                        <h4 class="text-2xl font-bold my-2">Melhoria Contínua</h4>
+                        <p class="text-gray-600 mb-4">A Manutenção Autônoma não é um projeto com um fim, mas uma cultura. Nesta etapa final, a equipe se concentra na melhoria contínua dos equipamentos e processos. Os operadores participam ativamente da análise de dados, da solução de problemas recorrentes e da proposição de melhorias (Kaizens) para aumentar a confiabilidade, a segurança e a produtividade.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="impacto" class="mt-20">
+            <h3 class="text-3xl font-bold text-center text-gray-800 mb-2">Visualizando o Impacto</h3>
+            <p class="text-center text-gray-600 mb-10">Um dos maiores benefícios da Manutenção Autônoma é a otimização da alocação de recursos. Este gráfico interativo demonstra como as responsabilidades de manutenção são redistribuídas, liberando a equipe de manutenção especializada para focar em tarefas de maior valor agregado, como manutenções complexas, análises de falhas e projetos de melhoria.</p>
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="text-center mb-6">
+                    <button id="beforeBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-300">Cenário ANTES da M.A.</button>
+                    <button id="afterBtn" class="bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-all duration-300 ml-4">Cenário DEPOIS da M.A.</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="impactChart"></canvas>
+                </div>
+            </div>
+        </section>
+        
+        <section id="otimizacao" class="mt-20">
+            <h3 class="text-3xl font-bold text-center text-gray-800 mb-2">Otimização Contínua ✨</h3>
+            <p class="text-center text-gray-600 mb-10">Use a inteligência artificial para destravar ideias de **Kaizen (Melhoria Contínua)**, focando em problemas recorrentes ou oportunidades de avanço. Esta ferramenta ajuda a transformar um problema em uma ação prática no Passo 7.</p>
+            <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
+                <h4 class="text-xl font-semibold mb-4 text-gray-700">Gerador de Ideias Kaizen</h4>
+                <label for="kaizenIssue" class="block text-sm font-medium text-gray-700 mb-1">Descreva o Problema ou Oportunidade:</label>
+                <textarea id="kaizenIssue" rows="3" placeholder="Ex: O descarte de resíduos de lubrificação é desorganizado e causa sujeira na área." class="w-full p-2 border border-gray-300 rounded-md mb-3"></textarea>
+                
+                <button id="generateKaizenBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-200">Sugestão Kaizen Inteligente ✨</button>
+                
+                <div id="kaizenOutput" class="mt-6 p-4 bg-green-50 rounded-md border border-green-300 hidden">
+                    <p class="font-bold text-sm text-green-800 mb-1">Plano de Ação Kaizen Sugerido:</p>
+                    <div id="kaizenResultText" class="text-sm text-gray-700 whitespace-pre-wrap"></div>
+                </div>
+                <div id="kaizenLoading" class="mt-4 text-center hidden">
+                    <div class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-green-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status"></div>
+                    <span class="ml-2 text-sm text-green-500">Analisando e sugerindo melhorias...</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+            <p>&copy; 2025 Guia Interativo de Manutenção Autônoma. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('nav a');
+            const timelineItems = document.querySelectorAll('.timeline-item');
+        
+            function updateActiveState() {
+                let currentSection = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+        
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.href.includes(currentSection)) {
+                        link.classList.add('active');
+                    }
+                });
+
+                let activeStepFound = false;
+                timelineItems.forEach((item, index) => {
+                    const section = item.querySelector('.step-card');
+                    if(section){
+                         const sectionTop = section.offsetTop;
+                         if (pageYOffset >= sectionTop - window.innerHeight / 2 && !activeStepFound) {
+                             timelineItems.forEach(i => i.classList.remove('active'));
+                             item.classList.add('active');
+                             activeStepFound = true; 
+                         }
+                    }
+                });
+                if (!activeStepFound && timelineItems.length > 0) {
+                    timelineItems[0].classList.add('active');
+                }
+            }
+        
+            window.addEventListener('scroll', updateActiveState);
+            updateActiveState();
+
+            const skillsCtx = document.getElementById('skillsChart').getContext('2d');
+            new Chart(skillsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Nível 1: Limpeza e Identificação', 'Nível 2: Padrões e Inspeção Simples', 'Nível 3: Inspeção Geral e Melhorias'],
+                    datasets: [{
+                        label: 'Progressão de Habilidades',
+                        data: [30, 40, 30],
+                        backgroundColor: [
+                            '#60a5fa', 
+                            '#3b82f6',
+                            '#2563eb'
+                        ],
+                        borderColor: '#f8f7f4',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}% do foco do treinamento`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const impactCtx = document.getElementById('impactChart').getContext('2d');
+            const beforeData = {
+                labels: ['Equipe de Manutenção', 'Operadores'],
+                datasets: [
+                    { label: 'Manutenção Corretiva', data: [40, 5], backgroundColor: '#ef4444' },
+                    { label: 'Manutenção Preventiva', data: [40, 10], backgroundColor: '#f97316' },
+                    { label: 'Limpeza, Lubrificação e Inspeção', data: [10, 20], backgroundColor: '#3b82f6' },
+                    { label: 'Melhorias e Análise', data: [10, 0], backgroundColor: '#10b981' }
+                ]
+            };
+            const afterData = {
+                labels: ['Equipe de Manutenção', 'Operadores'],
+                datasets: [
+                    { label: 'Manutenção Corretiva', data: [15, 5], backgroundColor: '#ef4444' },
+                    { label: 'Manutenção Preventiva', data: [25, 20], backgroundColor: '#f97316' },
+                    { label: 'Limpeza, Lubrificação e Inspeção', data: [5, 60], backgroundColor: '#3b82f6' },
+                    { label: 'Melhorias e Análise', data: [55, 15], backgroundColor: '#10b981' }
+                ]
+            };
+
+            const impactChart = new Chart(impactCtx, {
+                type: 'bar',
+                data: beforeData,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                callback: value => value + '%'
+                            }
+                        },
+                        y: { stacked: true }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribuição de Tarefas de Manutenção (Antes da M.A.)',
+                            font: { size: 16 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const beforeBtn = document.getElementById('beforeBtn');
+            const afterBtn = document.getElementById('afterBtn');
+
+            beforeBtn.addEventListener('click', () => {
+                impactChart.data = beforeData;
+                impactChart.options.plugins.title.text = 'Distribuição de Tarefas de Manutenção (Antes da M.A.)';
+                impactChart.update();
+                beforeBtn.classList.remove('bg-gray-300', 'text-gray-700');
+                beforeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                afterBtn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                afterBtn.classList.add('bg-gray-300', 'text-gray-700');
+            });
+            afterBtn.addEventListener('click', () => {
+                impactChart.data = afterData;
+                impactChart.options.plugins.title.text = 'Distribuição de Tarefas de Manutenção (Depois da M.A.)';
+                impactChart.update();
+                afterBtn.classList.remove('bg-gray-300', 'text-gray-700');
+                afterBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                beforeBtn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                beforeBtn.classList.add('bg-gray-300', 'text-gray-700');
+            });
+
+
+            // --- GEMINI API INTEGRATION START ---
+
+            // NOTE: O apiKey é deixado vazio. O ambiente de execução fornecerá a chave durante a execução.
+            const apiKey = ""; 
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
+
+            async function geminiApiCall(userQuery, systemPrompt) {
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                let response = null;
+                let attempts = 0;
+                const maxAttempts = 5;
+
+                while (attempts < maxAttempts) {
+                    try {
+                        const urlWithKey = `${apiUrl}?key=${apiKey}`;
+                        response = await fetch(urlWithKey, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.status === 429 && attempts < maxAttempts - 1) {
+                            const delay = Math.pow(2, attempts) * 1000 + Math.random() * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            attempts++;
+                            continue;
+                        }
+
+                        if (!response.ok) {
+                            const errorBody = await response.text();
+                            throw new Error(`API Error: ${response.status} - ${errorBody}`);
+                        }
+
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (text) {
+                            return text;
+                        } else {
+                            throw new Error("Resposta da API vazia ou inesperada.");
+                        }
+
+                    } catch (error) {
+                        console.error("Erro na chamada Gemini API:", error);
+                        if (attempts === maxAttempts - 1 || error.message.includes("API Error: 429") === false) {
+                            throw new Error("Falha ao se comunicar com a inteligência artificial. Tente novamente mais tarde.");
+                        }
+                        attempts++;
+                    }
+                }
+                throw new Error("Falha na chamada da API após várias tentativas.");
+            }
+
+            // --- 1. GEMINI LUP GENERATOR (Step 3) ---
+            const lupComponentInput = document.getElementById('lupComponent');
+            const lupTaskInput = document.getElementById('lupTask');
+            const generateLUPBtn = document.getElementById('generateLUPBtn');
+            const lupOutputDiv = document.getElementById('lupOutput');
+            const lupResultText = document.getElementById('lupResultText');
+            const lupLoading = document.getElementById('lupLoading');
+
+            if(generateLUPBtn) {
+                generateLUPBtn.addEventListener('click', generateLUP);
+            }
+            
+            async function generateLUP() {
+                const component = lupComponentInput.value.trim();
+                const task = lupTaskInput.value.trim();
+
+                if (!component || !task) {
+                    lupResultText.textContent = "Por favor, preencha o Nome do Componente e a Tarefa para gerar o rascunho.";
+                    lupOutputDiv.classList.remove('hidden');
+                    return;
+                }
+
+                lupOutputDiv.classList.add('hidden');
+                lupLoading.classList.remove('hidden');
+
+                const userQuery = `Gere um rascunho de Lição de Um Ponto (LUP) em português para o componente "${component}" e a tarefa "${task}". O rascunho deve ser prático, visual e incluir as seguintes seções:\n1. Objetivo\n2. Pontos-Chave da Inspeção/Execução\n3. Ferramentas Necessárias\n4. Frequência Sugerida\n5. Condição Ideal (Padrão)`;
+                const systemPrompt = "Você é um especialista em Manutenção Preditiva e TPM (Total Productive Maintenance). Sua tarefa é criar um rascunho de procedimento de manutenção autônoma extremamente claro e visual (Lição de Um Ponto), focado na segurança e na identificação de anomalias. Responda apenas com o rascunho formatado com títulos e utilize a formatação markdown para listas e negritos.";
+
+                try {
+                    const result = await geminiApiCall(userQuery, systemPrompt);
+                    lupResultText.textContent = result;
+                    lupOutputDiv.classList.remove('hidden');
+                } catch (error) {
+                    lupResultText.textContent = `Erro ao gerar LUP: ${error.message}`;
+                    lupOutputDiv.classList.remove('hidden');
+                    console.error(error);
+                } finally {
+                    lupLoading.classList.add('hidden');
+                }
+            }
+
+            // --- 2. GEMINI KAIZEN GENERATOR (Otimização Contínua Section) ---
+            const kaizenIssueInput = document.getElementById('kaizenIssue');
+            const generateKaizenBtn = document.getElementById('generateKaizenBtn');
+            const kaizenOutputDiv = document.getElementById('kaizenOutput');
+            const kaizenResultText = document.getElementById('kaizenResultText');
+            const kaizenLoading = document.getElementById('kaizenLoading');
+
+            if(generateKaizenBtn) {
+                generateKaizenBtn.addEventListener('click', generateKaizen);
+            }
+
+            async function generateKaizen() {
+                const issue = kaizenIssueInput.value.trim();
+
+                if (!issue) {
+                    kaizenResultText.textContent = "Por favor, descreva o problema ou oportunidade para receber uma sugestão Kaizen.";
+                    kaizenOutputDiv.classList.remove('hidden');
+                    return;
+                }
+
+                kaizenOutputDiv.classList.add('hidden');
+                kaizenLoading.classList.remove('hidden');
+
+                const userQuery = `Com base no seguinte problema/oportunidade de melhoria: "${issue}", sugira um plano de ação Kaizen (Melhoria Contínua) em português. O plano deve ser prático e incluir as seções:\n1. Foco da Melhoria\n2. Ação Imediata (O que fazer primeiro?)\n3. Próximos Passos (Desenvolvimento)\n4. Resultado Esperado (Métrica)`;
+                const systemPrompt = "Você é um consultor Lean e um facilitador de Kaizen. Sua função é transformar problemas de manufatura ou manutenção em planos de ação concretos, de baixo custo e focados em resultados rápidos. Responda apenas com o plano de ação Kaizen formatado com títulos e etapas e utilize a formatação markdown para listas e negritos.";
+
+                try {
+                    const result = await geminiApiCall(userQuery, systemPrompt);
+                    kaizenResultText.textContent = result;
+                    kaizenOutputDiv.classList.remove('hidden');
+                } catch (error) {
+                    kaizenResultText.textContent = `Erro ao gerar Kaizen: ${error.message}`;
+                    kaizenOutputDiv.classList.remove('hidden');
+                    console.error(error);
+                } finally {
+                    kaizenLoading.classList.add('hidden');
+                }
+            }
+            // --- GEMINI API INTEGRATION END ---
+        });
+    </script>
+</body>
+</html>
